@@ -70,6 +70,8 @@ void Error_Handler(void);
 #define LED2_GPIO_Port GPIOE
 #define LED3_Pin GPIO_PIN_15
 #define LED3_GPIO_Port GPIOE
+#define SD_Card_Pin GPIO_PIN_3
+#define SD_Card_GPIO_Port GPIOD
 /* USER CODE BEGIN Private defines */
 
 /* USER CODE END Private defines */
