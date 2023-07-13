@@ -41,9 +41,9 @@ static void http_server(struct netconn *conn)
 			}
 			else
 			{
-			if (strncmp((char const *)buf,"GET /img/lwip1.jpg",14)==0) // Получение картинки
+			if (strncmp((char const *)buf,"GET /img/lwip.gif",14)==0) // Получение картинки
 						{
-							fs_open(&file, "/img/lwip1.jpg");
+							fs_open(&file, "/img/lwip.gif");
 							netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
 							fs_close(&file);
 						}
