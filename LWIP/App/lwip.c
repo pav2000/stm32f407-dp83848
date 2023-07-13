@@ -6,7 +6,7 @@
   ******************************************************************************
   * @attention
   *
-  * <h2><center>&copy; Copyright (c) 2022 STMicroelectronics.
+  * <h2><center>&copy; Copyright (c) 2023 STMicroelectronics.
   * All rights reserved.</center></h2>
   *
   * This software component is licensed by ST under Ultimate Liberty license
@@ -25,6 +25,7 @@
 #include "lwip/sio.h"
 #endif /* MDK ARM Compiler */
 #include "ethernetif.h"
+#include <string.h>
 
 /* USER CODE BEGIN 0 */
 
@@ -36,6 +37,10 @@ void Error_Handler(void);
 /* USER CODE BEGIN 1 */
 
 /* USER CODE END 1 */
+/* Semaphore to signal Ethernet Link state update */
+osSemaphoreId Netif_LinkSemaphore = NULL;
+/* Ethernet link thread Argument */
+struct link_str link_arg;
 
 /* Variables Initialization */
 struct netif gnetif;
@@ -45,6 +50,10 @@ ip4_addr_t gw;
 uint8_t IP_ADDRESS[4];
 uint8_t NETMASK_ADDRESS[4];
 uint8_t GATEWAY_ADDRESS[4];
+/* USER CODE BEGIN OS_THREAD_ATTR_CMSIS_RTOS_V2 */
+#define INTERFACE_THREAD_STACK_SIZE ( 1024 )
+osThreadAttr_t attributes;
+/* USER CODE END OS_THREAD_ATTR_CMSIS_RTOS_V2 */
 
 /* USER CODE BEGIN 2 */
 
@@ -58,8 +67,8 @@ void MX_LWIP_Init(void)
   /* IP addresses initialization */
   IP_ADDRESS[0] = 192;
   IP_ADDRESS[1] = 168;
-  IP_ADDRESS[2] = 1;
-  IP_ADDRESS[3] = 111;
+  IP_ADDRESS[2] = 0;
+  IP_ADDRESS[3] = 178;
   NETMASK_ADDRESS[0] = 255;
   NETMASK_ADDRESS[1] = 255;
   NETMASK_ADDRESS[2] = 255;
@@ -72,16 +81,16 @@ void MX_LWIP_Init(void)
 /* USER CODE BEGIN IP_ADDRESSES */
 /* USER CODE END IP_ADDRESSES */
 
-  /* Initilialize the LwIP stack without RTOS */
-  lwip_init();
+  /* Initilialize the LwIP stack with RTOS */
+  tcpip_init( NULL, NULL );
 
   /* IP addresses initialization without DHCP (IPv4) */
   IP4_ADDR(&ipaddr, IP_ADDRESS[0], IP_ADDRESS[1], IP_ADDRESS[2], IP_ADDRESS[3]);
   IP4_ADDR(&netmask, NETMASK_ADDRESS[0], NETMASK_ADDRESS[1] , NETMASK_ADDRESS[2], NETMASK_ADDRESS[3]);
   IP4_ADDR(&gw, GATEWAY_ADDRESS[0], GATEWAY_ADDRESS[1], GATEWAY_ADDRESS[2], GATEWAY_ADDRESS[3]);
 
-  /* add the network interface (IPv4/IPv6) without RTOS */
-  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &ethernet_input);
+  /* add the network interface (IPv4/IPv6) with RTOS */
+  netif_add(&gnetif, &ipaddr, &netmask, &gw, NULL, &ethernetif_init, &tcpip_input);
 
   /* Registers the default network interface */
   netif_set_default(&gnetif);
@@ -100,7 +109,19 @@ void MX_LWIP_Init(void)
   /* Set the link callback function, this function is called on change of link status*/
   netif_set_link_callback(&gnetif, ethernetif_update_config);
 
+  /* create a binary semaphore used for informing ethernetif of frame reception */
+  Netif_LinkSemaphore = osSemaphoreNew(1, 1, NULL);
+
+  link_arg.netif = &gnetif;
+  link_arg.semaphore = Netif_LinkSemaphore;
   /* Create the Ethernet link handler thread */
+/* USER CODE BEGIN OS_THREAD_NEW_CMSIS_RTOS_V2 */
+  memset(&attributes, 0x0, sizeof(osThreadAttr_t));
+  attributes.name = "LinkThr";
+  attributes.stack_size = INTERFACE_THREAD_STACK_SIZE;
+  attributes.priority = osPriorityBelowNormal;
+  osThreadNew(ethernetif_set_link, &link_arg, &attributes);
+/* USER CODE END OS_THREAD_NEW_CMSIS_RTOS_V2 */
 
 /* USER CODE BEGIN 3 */
 
@@ -113,32 +134,6 @@ void MX_LWIP_Init(void)
 /* USER CODE BEGIN 4 */
 /* USER CODE END 4 */
 #endif
-
-/**
- * ----------------------------------------------------------------------
- * Function given to help user to continue LwIP Initialization
- * Up to user to complete or change this function ...
- * Up to user to call this function in main.c in while (1) of main(void)
- *-----------------------------------------------------------------------
- * Read a received packet from the Ethernet buffers
- * Send it to the lwIP stack for handling
- * Handle timeouts if LWIP_TIMERS is set and without RTOS
- * Handle the llink status if LWIP_NETIF_LINK_CALLBACK is set and without RTOS
- */
-void MX_LWIP_Process(void)
-{
-/* USER CODE BEGIN 4_1 */
-/* USER CODE END 4_1 */
-  ethernetif_input(&gnetif);
-
-/* USER CODE BEGIN 4_2 */
-/* USER CODE END 4_2 */
-  /* Handle timeouts */
-  sys_check_timeouts();
-
-/* USER CODE BEGIN 4_3 */
-/* USER CODE END 4_3 */
-}
 
 #if defined ( __CC_ARM )  /* MDK ARM Compiler */
 /**
