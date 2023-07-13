@@ -24,18 +24,16 @@ static void http_server(struct netconn *conn)
 	u16_t buflen;
 	struct fs_file file;
 	HAL_GPIO_WritePin(LED3_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); // Соединение установлено
-	/* Read the data from the port, blocking if nothing yet there */
-	recv_err = netconn_recv(conn, &inbuf);
+
+	recv_err = netconn_recv(conn, &inbuf); // Чтение данных из порта, блокировка, если еще ничего нет
 
 	if (recv_err == ERR_OK)
 	{
 		if (netconn_err(conn) == ERR_OK)
 		{
-			/* Get the data pointer and length of the data inside a netbuf */
-			netbuf_data(inbuf, (void**)&buf, &buflen);
+			netbuf_data(inbuf, (void**)&buf, &buflen); // Получить указатель данных и длину данных внутри netbuf
 
-			/* Check if request to get the index.html */
-			if (strncmp((char const *)buf,"GET /index.html",15)==0)
+			if ((strncmp((char const *)buf,"GET /index.html",15)==0)||(strncmp((char const *)buf,"GET / HTTP/1.1\r\n",16)==0)) // Проверьте, есть ли запрос на получение index.html или GET / HTTP/1.1\r\n
 			{
 				fs_open(&file, "/index.html");
 				netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
@@ -43,19 +41,25 @@ static void http_server(struct netconn *conn)
 			}
 			else
 			{
+			if (strncmp((char const *)buf,"GET /img/lwip1.jpg",14)==0) // Получение картинки
+						{
+							fs_open(&file, "/img/lwip1.jpg");
+							netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
+							fs_close(&file);
+						}
+				else{
 				/* Load Error page */
 				fs_open(&file, "/404.html");
 				netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
 				fs_close(&file);
+				}
 			}
 		}
 	}
-	/* Close the connection (server closes in HTTP) */
-	netconn_close(conn);
 
-	/* Delete the buffer (netconn_recv gives us ownership,
-   so we have to make sure to deallocate the buffer) */
-	netbuf_delete(inbuf);
+	netconn_close(conn); // Закройте соединение (сервер закрывается в HTTP)
+
+	netbuf_delete(inbuf);  // Удаляем буфер (netconn_recv его выделяет, поэтому мы должны обязательно освободить буфер)
 	HAL_GPIO_WritePin(LED3_GPIO_Port, LED1_Pin, GPIO_PIN_SET); // Конец соединение
 }
 
