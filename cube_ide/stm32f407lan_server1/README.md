@@ -1,5 +1,6 @@
 # stm32f407-dp83848 <br>
-Simple web server on STM32F407 and LAN DP83848
+Simple web server on STM32F407 and LAN DP83848<br>
+IP адрес статика 192.168.0.178 (настройка через Cube.MX свойства LwIP)<br>
 Простейший однопоточный web сервер с использованием freeRTOS.<br>
 Файлы в web сервера хранятся во флеше микроконтроллера (файл fsdata_custom.c).<br>
 Этот файл создается специальной утилитой makeFSdata.exe (входит в поставку CUBE IDE).<br>
