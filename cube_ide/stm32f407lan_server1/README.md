@@ -1,4 +1,4 @@
-# stm32f407-dp83848
+# stm32f407-dp83848 <br>
 Simple web server on STM32F407 and LAN DP83848
 Простейший однопоточный web сервер с использованием freeRTOS.<br>
 Файлы в web сервера хранятся во флеше микроконтроллера (файл fsdata_custom.c).<br>
@@ -12,4 +12,5 @@ as you can see in fs.c file, fsdata.c is directly included at the begining of fs
 <br>
 So to fix multiple definition you need to exclude fsdata.c from your project build (for exemple if you use eclipse, right click on the file, select Properties and check 'Exclude from build')<br>
 <br>
--------
+
+
