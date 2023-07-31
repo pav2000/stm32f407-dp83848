@@ -71,6 +71,23 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
+/*
+int _write(int file, char* ptr, int len)
+{   int DataIdx;
+    for(DataIdx = 0; DataIdx < len; DataIdx++)
+    { ITM_SendChar(*ptr++); }
+     return len;
+}
+*/
+
+int __io_putchar(int ch)
+{
+ // Write character to ITM ch.0
+ ITM_SendChar(ch);
+ return(ch);
+}
+
+
 
 /* USER CODE END 0 */
 
@@ -106,11 +123,12 @@ int main(void)
   MX_SDIO_SD_Init();
   MX_FATFS_Init();
   /* USER CODE BEGIN 2 */
+  printf("Init ok \n");
   // Погасить все светодиоды
   HAL_GPIO_WritePin(LED1_GPIO_Port, LED1_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
   HAL_GPIO_WritePin(LED3_GPIO_Port, LED3_Pin, GPIO_PIN_SET);
-
+  printf("Leds set OFF \n");
 /*  while (1)
     {
 	  HAL_GPIO_TogglePin(LED1_GPIO_Port, LED1_Pin);
@@ -295,13 +313,15 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-
-FATFS fs;  // file system
-FIL fil; // File
+//volatile static FATFS fs;  // file system
+//volatile static FIL fil;   // File
 FILINFO fno;
 FRESULT fresult=0;  // result
 UINT br, bw;  // File read/write count
 
+FATFS *pfs;
+DWORD fre_clust;
+uint32_t total, free_space;
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -316,24 +336,32 @@ void StartDefaultTask(void *argument)
   /* init code for LWIP */
   MX_LWIP_Init();
   /* USER CODE BEGIN 5 */
-  http_server_init();
+  printf("MX_LWIP_Init ok \n");
 
+//	fresult = f_mount(&fs,"", 1);  // Монтировать карту
+//	if (fresult != FR_OK) printf("f_mount err: %d \n",fresult); else printf("f_mount Ok \n");
+
+/*
+// тест карты
 fresult = f_mount(&fs,"", 1);  // Монтировать карту
-if (fresult != FR_OK) HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);  // Зажечь светодиод ошибки
+if (fresult != FR_OK)
+	{printf("f_mount err \n");
+	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET); } // Зажечь светодиод ошибки
+else printf("f_mount Ok \n");
 
-fresult = f_open(&fil, "test02.txt", FA_CREATE_ALWAYS|FA_READ|FA_WRITE);
-if (fresult != FR_OK) HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);  // Зажечь светодиод ошибки
-
-fresult = f_write(&fil, "Test 12345678", strlen("Test 12345678"), &bw);
-if (fresult != FR_OK)    HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);  // Зажечь светодиод ошибки
-
-fresult = f_close(&fil);
-if (fresult != FR_OK) HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);  // Зажечь светодиод ошибки
+fresult =  f_getfree("", &fre_clust, &pfs);
+   total = (uint32_t)((pfs->n_fatent - 2) * pfs->csize * 0.5);
+   free_space = (uint32_t)(fre_clust * pfs->csize * 0.5);
+   printf("Size SD: %lu\n",total);
+   printf("Free SD: %lu\n",free_space);
+*/
+   http_server_init();
+   printf("http_server_init ok \n");
 
   /* Infinite loop */
   for(;;)
   {
-    osDelay(1);
+    osDelay(10);
   }
   /* USER CODE END 5 */
 }

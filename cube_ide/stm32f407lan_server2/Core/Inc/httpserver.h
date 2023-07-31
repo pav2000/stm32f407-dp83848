@@ -9,6 +9,8 @@
 #define __HTTPSERVER_NETCONN_H__
 
 #include "lwip/api.h"
+#include "fatfs.h"
 void http_server_init(void);
+FRESULT http_file(struct netconn *conn, char *name);
 
 #endif /* __HTTPSERVER_NETCONN_H__ */

@@ -24,10 +24,12 @@ static void http_server(struct netconn *conn)
 	char* buf;
 	u16_t buflen;
 	struct fs_file file;
+	uint16_t len;
 	HAL_GPIO_WritePin(LED3_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); // Соединение установлено
 
 	recv_err = netconn_recv(conn, &inbuf); // Чтение данных из порта, блокировка, если еще ничего нет
 
+	printf("new connection \n");
 	if (recv_err == ERR_OK)
 	{
 		if (netconn_err(conn) == ERR_OK)
@@ -36,22 +38,24 @@ static void http_server(struct netconn *conn)
 
 			if ((strncmp((char const *)buf,"GET /index.html",15)==0)||(strncmp((char const *)buf,"GET / HTTP/1.1\r\n",16)==0)) // Проверьте, есть ли запрос на получение index.html или GET / HTTP/1.1\r\n
 			{
-			//	fs_open(&file, "/index.html");
-				netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
-			//	fs_close(&file);
+				http_file(conn, "index.html");
 			}
 			else
 			{
 			if (strncmp((char const *)buf,"GET /img/lwip.gif",14)==0) // Получение картинки
 						{
+				http_file(conn, "img/lwip.gif");
 						//	fs_open(&file, "/img/lwip.gif");
-							netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
+					//		netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
+			//	printf("GET /img/lwip.gif \n");
 						//	fs_close(&file);
 						}
 				else{
 				/* Load Error page */
 			//	fs_open(&file, "/404.html");
-				netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
+			//	netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
+				http_file(conn, "404.html");
+				//	printf("/404.html \n");
 			//	fs_close(&file);
 				}
 			}
@@ -61,7 +65,7 @@ static void http_server(struct netconn *conn)
 	netconn_close(conn); // Закройте соединение (сервер закрывается в HTTP)
 
 	netbuf_delete(inbuf);  // Удаляем буфер (netconn_recv его выделяет, поэтому мы должны обязательно освободить буфер)
-	HAL_GPIO_WritePin(LED3_GPIO_Port, LED1_Pin, GPIO_PIN_SET); // Конец соединение
+//	HAL_GPIO_WritePin(LED3_GPIO_Port, LED1_Pin, GPIO_PIN_SET); // Конец соединение
 }
 
 
@@ -107,6 +111,37 @@ void http_server_init()
   sys_thread_new("http_thread", http_thread, NULL, DEFAULT_THREAD_STACKSIZE, osPriorityNormal);
 }
 
+// Кинуть файл в сокет
+volatile static FATFS FatFs;   /* Work area (filesystem object) for logical drive */
+volatile static FIL _fil;        /* File object */
+uint8_t line[1024]; /* Line buffer */
+FRESULT _fresult;     /* FatFs return code */
 
+FRESULT http_file(struct netconn *conn, char *name){
+	_fresult = f_mount(&FatFs,"", 1);  // Монтировать карту
+	if (_fresult != FR_OK) {printf("f_mount err: %d \n",_fresult);return _fresult;} else printf("f_mount Ok \n");
+
+	_fresult = f_open(&_fil, (char const *)name, FA_READ); 	// Открыть файл для чтения в корне
+	if (_fresult != FR_OK) { printf("f_open err: %d \n",_fresult); return _fresult;} else printf("f_open Ok \n");
+	printf("name file: %s\n",name);
+
+	int br;
+	/* Copy source to destination */
+	for (;;) {
+		_fresult = f_read(&_fil, line, sizeof line, &br); /* Read a chunk of data from the source file */
+		if (_fresult != FR_OK) {printf("f_read err: %d \n",_fresult); return _fresult;} else printf(".");
+		if (br == 0) break; /* error or eof */
+		netconn_write(conn, (const unsigned char*)(line), (size_t)br, NETCONN_NOCOPY);
+	//	printf("netconn_write %d butes \n",br);
+		}
+
+	/* Close the file */
+	f_close(&_fil);
+
+	_fresult =  f_mount(NULL,"", 1);
+	if (_fresult != FR_OK){ printf("f_unmount err: %d \n",_fresult);return _fresult;} else printf("f_unmount Ok \n");
+	 //   free(FatFs);
+
+}
 
 
