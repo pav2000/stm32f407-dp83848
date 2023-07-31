@@ -12,5 +12,5 @@
 #include "fatfs.h"
 void http_server_init(void);
 FRESULT http_file(struct netconn *conn, char *name);
-
+char* get_name_file(char *buf);
 #endif /* __HTTPSERVER_NETCONN_H__ */

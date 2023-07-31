@@ -313,8 +313,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-//volatile static FATFS fs;  // file system
-//volatile static FIL fil;   // File
+static FATFS fs;  // file system
 FILINFO fno;
 FRESULT fresult=0;  // result
 UINT br, bw;  // File read/write count
@@ -339,7 +338,8 @@ void StartDefaultTask(void *argument)
   printf("MX_LWIP_Init ok \n");
 
 //	fresult = f_mount(&fs,"", 1);  // Монтировать карту
-//	if (fresult != FR_OK) printf("f_mount err: %d \n",fresult); else printf("f_mount Ok \n");
+//	if (fresult != FR_OK) printf("f_mount err: %d \n",fresult);
+
 
 /*
 // тест карты

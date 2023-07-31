@@ -16,6 +16,7 @@
 #include "httpserver.h"
 #include "cmsis_os.h"
 
+static char file_name[100];
 
 static void http_server(struct netconn *conn)
 {
@@ -23,49 +24,29 @@ static void http_server(struct netconn *conn)
 	err_t recv_err;
 	char* buf;
 	u16_t buflen;
-	struct fs_file file;
-	uint16_t len;
 	HAL_GPIO_WritePin(LED3_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); // Соединение установлено
 
 	recv_err = netconn_recv(conn, &inbuf); // Чтение данных из порта, блокировка, если еще ничего нет
 
 	printf("new connection \n");
+	HAL_GPIO_WritePin(LED3_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); // Начало соединения
 	if (recv_err == ERR_OK)
 	{
 		if (netconn_err(conn) == ERR_OK)
 		{
 			netbuf_data(inbuf, (void**)&buf, &buflen); // Получить указатель данных и длину данных внутри netbuf
+			get_name_file(buf);  // Вытащить имя запрашиваемого файла
 
-			if ((strncmp((char const *)buf,"GET /index.html",15)==0)||(strncmp((char const *)buf,"GET / HTTP/1.1\r\n",16)==0)) // Проверьте, есть ли запрос на получение index.html или GET / HTTP/1.1\r\n
-			{
-				http_file(conn, "index.html");
-			}
-			else
-			{
-			if (strncmp((char const *)buf,"GET /img/lwip.gif",14)==0) // Получение картинки
-						{
-				http_file(conn, "img/lwip.gif");
-						//	fs_open(&file, "/img/lwip.gif");
-					//		netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
-			//	printf("GET /img/lwip.gif \n");
-						//	fs_close(&file);
-						}
-				else{
-				/* Load Error page */
-			//	fs_open(&file, "/404.html");
-			//	netconn_write(conn, (const unsigned char*)(file.data), (size_t)file.len, NETCONN_NOCOPY);
-				http_file(conn, "404.html");
-				//	printf("/404.html \n");
-			//	fs_close(&file);
-				}
-			}
+			if (strlen(file_name)==0) http_file(conn, "index.html"); // Если пустая строка то запрос индекса
+			else http_file(conn, file_name);
 		}
+
 	}
 
 	netconn_close(conn); // Закройте соединение (сервер закрывается в HTTP)
 
 	netbuf_delete(inbuf);  // Удаляем буфер (netconn_recv его выделяет, поэтому мы должны обязательно освободить буфер)
-//	HAL_GPIO_WritePin(LED3_GPIO_Port, LED1_Pin, GPIO_PIN_SET); // Конец соединение
+	HAL_GPIO_WritePin(LED3_GPIO_Port, LED1_Pin, GPIO_PIN_SET); // Конец соединение
 }
 
 
@@ -112,36 +93,46 @@ void http_server_init()
 }
 
 // Кинуть файл в сокет
-volatile static FATFS FatFs;   /* Work area (filesystem object) for logical drive */
-volatile static FIL _fil;        /* File object */
+static FATFS FatFs;   /* Work area (filesystem object) for logical drive */
+static FIL _fil;        /* File object */
 uint8_t line[1024]; /* Line buffer */
 FRESULT _fresult;     /* FatFs return code */
 
 FRESULT http_file(struct netconn *conn, char *name){
-	_fresult = f_mount(&FatFs,"", 1);  // Монтировать карту
-	if (_fresult != FR_OK) {printf("f_mount err: %d \n",_fresult);return _fresult;} else printf("f_mount Ok \n");
+_fresult = f_mount(&FatFs,"", 1);  // Монтировать карту
+if (_fresult != FR_OK) {printf("f_mount err: %d \n",_fresult);return _fresult;}
 
-	_fresult = f_open(&_fil, (char const *)name, FA_READ); 	// Открыть файл для чтения в корне
-	if (_fresult != FR_OK) { printf("f_open err: %d \n",_fresult); return _fresult;} else printf("f_open Ok \n");
-	printf("name file: %s\n",name);
+	_fresult = f_open(&_fil, (char const *)name, FA_READ); 	// Открыть файл для чтения
+	if (_fresult != FR_OK) { printf("file %s f_open err: %d \n", name, _fresult); return _fresult;}
+	printf("name file: %s ",name);
 
-	int br;
-	/* Copy source to destination */
+	uint br;
+
+	/* Чтение и передача файла */
 	for (;;) {
 		_fresult = f_read(&_fil, line, sizeof line, &br); /* Read a chunk of data from the source file */
 		if (_fresult != FR_OK) {printf("f_read err: %d \n",_fresult); return _fresult;} else printf(".");
-		if (br == 0) break; /* error or eof */
-		netconn_write(conn, (const unsigned char*)(line), (size_t)br, NETCONN_NOCOPY);
-	//	printf("netconn_write %d butes \n",br);
+		if (br == 0) {printf("\n"); break;}  /* Ошибка или конец файла*/
+		netconn_write(conn, (const unsigned char*)(line), (size_t)br, NETCONN_NOCOPY); // послать буфер в сокет
 		}
 
-	/* Close the file */
-	f_close(&_fil);
+	_fresult = f_close(&_fil); // закрыть файл
+	if (_fresult != FR_OK){ printf("f_close err: %d \n",_fresult);return _fresult;}
 
-	_fresult =  f_mount(NULL,"", 1);
-	if (_fresult != FR_OK){ printf("f_unmount err: %d \n",_fresult);return _fresult;} else printf("f_unmount Ok \n");
-	 //   free(FatFs);
+//	_fresult =  f_mount(NULL,"", 1); // Отмонтировать диск
+//	if (_fresult != FR_OK){ printf("f_unmount err: %d \n",_fresult);return _fresult;}
 
+return FR_OK;
 }
 
+// Извлечь имя файла из запроса (ищет заголовок и далее идет имя до кода 0x0a)
+// возвращает или имя или null
+#define HEAD1 "GET /"
+char* get_name_file(char *buf){
+char *ptr;
+ptr = strstr(buf,HEAD1)+strlen(HEAD1);
 
+for(uint16_t i=0;i<strlen(ptr);i++) // Копирование имени
+      if (ptr[i]==0x20) {file_name[i]=0; break;} else file_name[i]=ptr[i];
+return file_name;
+}
