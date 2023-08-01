@@ -37,7 +37,7 @@
 /* USER CODE BEGIN PD */
 /* USER CODE END PD */
 
-/* Private macro -------------------------------------------------------------*/
+/* Private macro -----------------------------------/#--------------------------*/
 /* USER CODE BEGIN PM */
 
 /* USER CODE END PM */
@@ -71,15 +71,11 @@ void StartDefaultTask(void *argument);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-/*
-int _write(int file, char* ptr, int len)
-{   int DataIdx;
-    for(DataIdx = 0; DataIdx < len; DataIdx++)
-    { ITM_SendChar(*ptr++); }
-     return len;
-}
-*/
 
+static FATFS Fs;   /* Work area (filesystem object) for logical drive */
+FRESULT fresult;   /* FatFs return code */
+
+// Вывод в SWO
 int __io_putchar(int ch)
 {
  // Write character to ITM ch.0
@@ -167,6 +163,8 @@ int main(void)
 
   /* USER CODE BEGIN RTOS_EVENTS */
   /* add events, ... */
+
+
   /* USER CODE END RTOS_EVENTS */
 
   /* Start scheduler */
@@ -313,14 +311,7 @@ static void MX_GPIO_Init(void)
 }
 
 /* USER CODE BEGIN 4 */
-static FATFS fs;  // file system
-FILINFO fno;
-FRESULT fresult=0;  // result
-UINT br, bw;  // File read/write count
 
-FATFS *pfs;
-DWORD fre_clust;
-uint32_t total, free_space;
 /* USER CODE END 4 */
 
 /* USER CODE BEGIN Header_StartDefaultTask */
@@ -337,31 +328,16 @@ void StartDefaultTask(void *argument)
   /* USER CODE BEGIN 5 */
   printf("MX_LWIP_Init ok \n");
 
-//	fresult = f_mount(&fs,"", 1);  // Монтировать карту
-//	if (fresult != FR_OK) printf("f_mount err: %d \n",fresult);
+  fresult = f_mount(&Fs,"", 1);  // Монтировать карту
+  if (fresult != FR_OK) printf("f_mount err: %d \n",fresult); else printf("f_mount Ok\n");
 
-
-/*
-// тест карты
-fresult = f_mount(&fs,"", 1);  // Монтировать карту
-if (fresult != FR_OK)
-	{printf("f_mount err \n");
-	HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET); } // Зажечь светодиод ошибки
-else printf("f_mount Ok \n");
-
-fresult =  f_getfree("", &fre_clust, &pfs);
-   total = (uint32_t)((pfs->n_fatent - 2) * pfs->csize * 0.5);
-   free_space = (uint32_t)(fre_clust * pfs->csize * 0.5);
-   printf("Size SD: %lu\n",total);
-   printf("Free SD: %lu\n",free_space);
-*/
    http_server_init();
    printf("http_server_init ok \n");
 
   /* Infinite loop */
   for(;;)
   {
-    osDelay(10);
+    osDelay(100);
   }
   /* USER CODE END 5 */
 }
