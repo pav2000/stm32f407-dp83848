@@ -71,7 +71,6 @@ static void http_thread(void *arg)
         {
           /* serve connection */
           http_server(newconn);
-        //  osDelay(10);
           /* delete connection */
           netconn_delete(newconn);
         }
@@ -80,6 +79,17 @@ static void http_thread(void *arg)
   }
 }
 
+// задача мигания светодиодом 2
+static void blink_thread(void *arg)
+{
+	  while(1)
+	      {
+		  HAL_GPIO_WritePin(LED3_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
+		  osDelay(50);
+		  HAL_GPIO_WritePin(LED3_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
+		  osDelay(1000);
+	      }
+}
 
 //Функция http_server_init () просто создаст новый http_thread.
 // Размер стека установлен по умолчанию (2*1024 байт), а приоритет - это нормальный.
@@ -87,13 +97,13 @@ static void http_thread(void *arg)
 void http_server_init()
 {
   sys_thread_new("http_thread", http_thread, NULL, 2*DEFAULT_THREAD_STACKSIZE, osPriorityNormal);
+  sys_thread_new("blink", blink_thread, NULL, 128, osPriorityNormal);
 }
 
 
 // Кинуть файл в сокет (файловая система уже смотнтирована)
 FIL _fil;        /* File object */
 uint8_t line[1024]; /* Line buffer */
-
 FRESULT http_file(struct netconn *conn, char *name){
 	FRESULT _fresult;     /* FatFs return code */
 	_fresult = f_open(&_fil, (char const *)name, FA_READ); 	// Открыть файл для чтения
