@@ -87,7 +87,7 @@ static void blink_thread(void *arg)
 		  HAL_GPIO_WritePin(LED3_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
 		  osDelay(50);
 		  HAL_GPIO_WritePin(LED3_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-		  osDelay(1000);
+		  osDelay(1000-50);
 	      }
 }
 
@@ -97,7 +97,7 @@ static void blink_thread(void *arg)
 void http_server_init()
 {
   sys_thread_new("http_thread", http_thread, NULL, 2*DEFAULT_THREAD_STACKSIZE, osPriorityNormal);
-  sys_thread_new("blink", blink_thread, NULL, 128, osPriorityNormal);
+  sys_thread_new("blink", blink_thread, NULL, 128, osPriorityBelowNormal);
 }
 
 
