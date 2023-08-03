@@ -88,6 +88,7 @@ static void blink_thread(void *arg)
 	  osDelay(50);
 	  HAL_GPIO_WritePin(LED3_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
 	  osDelay(1000-50);
+
 	  }
 }
 
@@ -102,15 +103,21 @@ void http_server_init()
 
 
 // Кинуть файл в сокет (файловая система уже смотнтирована)
+
 FATFS Fs1;   /* Work area (filesystem object) for logical drive */
 FIL _fil;        /* File object */
 uint8_t line[1024]; /* Line buffer */
+
 FRESULT http_file(struct netconn *conn, char *name){
 	FRESULT _fresult;     /* FatFs return code */
 
-
 	  _fresult = f_mount(&Fs1,"", 1);  // Монтировать карту
-	  if (_fresult != FR_OK) { printf("f_mount err: %d \n",_fresult);  return _fresult;	}
+	  if (_fresult != FR_OK) {
+	   printf("f_mount err: %d \n",_fresult);
+	   sd_up();
+	   _fresult = f_mount(&Fs1,"", 1);  // Монтировать карту
+	   if (_fresult != FR_OK) {  printf("f_mount err: %d \n",_fresult);return _fresult;	}
+	  }
 
 	_fresult = f_open(&_fil, (char const *)name, FA_READ); 	// Открыть файл для чтения
 	if (_fresult != FR_OK){ printf("file %s f_open err: %d \n", name, _fresult); return _fresult;	}

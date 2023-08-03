@@ -83,7 +83,11 @@ int __io_putchar(int ch)
  return(ch);
 }
 
-
+void sd_up()
+{
+	MX_SDIO_SD_Init();
+	MX_FATFS_Init();
+}
 
 /* USER CODE END 0 */
 
