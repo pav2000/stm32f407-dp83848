@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html>
+<head>
+<title>Stm32 Web Page with AJAX - Pav2000</title>
+<script>
+function GetSwitchState() {
+         nocache = "&nocache=" + Math.random() * 1000000;
+         var request = new XMLHttpRequest();
+         request.onreadystatechange = function() {
+         if (this.readyState == 4) {
+         if (this.status == 200) {
+         if (this.responseText != null) {
+         document.getElementById("key_txt").innerHTML = this.responseText;
+         }}}}
+         request.open("GET", "ajax_key" + nocache, true);
+         request.send(null);
+         setTimeout('GetSwitchState()', 1000);
+}
+</script>
+</head>
+<body onload="GetSwitchState()">
+<h1>Stm32 Web Server with AJAX</h1>
+<h3>Key Status on PE10</h3>
+<p id="key_txt">Key state: . . .</p>
+</body>
+</html>
