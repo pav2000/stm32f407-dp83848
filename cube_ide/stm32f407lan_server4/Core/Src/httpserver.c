@@ -19,7 +19,7 @@ static void http_server(struct netconn *conn)
 {
 	struct netbuf *inbuf;
 	err_t recv_err;
-	char* buf,*name;
+	char* buf,*name, str[100];
 	u16_t buflen;
 	HAL_GPIO_WritePin(LED3_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); // Соединение установлено
 
@@ -33,16 +33,20 @@ static void http_server(struct netconn *conn)
 		{
 			netbuf_data(inbuf, (void**)&buf, &buflen); // Получить указатель данных и длину данных внутри netbuf
 			name=get_name_file(buf);  // Вытащить имя запрашиваемого файла
-			if (strstr(name,"ajax_key")){ // Найден AJAX запрос
-			// Читаем состояне первой кнопки
-				if( HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin) == GPIO_PIN_SET ) {
-				    // на выводе SW1 высокий уровень, кнопка отжата
-				netconn_write(conn, "SW1 HIGH", strlen("SW1 HIGH"), NETCONN_NOCOPY); // послать буфер в сокет
-				}
-				else {
-				    // на выводе SW1 низкий уровень, кнопка нажата
-					netconn_write(conn, "SW1 LOW", strlen("SW1 LOW"), NETCONN_NOCOPY); // послать буфер в сокет
-				}
+			if (strstr(name,"ajaxInfo")){ // Найден AJAX запрос
+				// Формируем xml ответ на запрос с данными
+				netconn_write(conn, "<?xml version = \"1.0\" ?> \n <inputs>", strlen("<?xml version = \"1.0\" ?> \n <inputs>"), NETCONN_NOCOPY); // послать заголовок
+                sprintf(str,"<SW1> %s </SW1>",HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin)?"On":"Off");
+                netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение первой кнопки
+                sprintf(str,"<SW2> %s </SW2>",HAL_GPIO_ReadPin(SW2_GPIO_Port, SW2_Pin)?"On":"Off");
+                netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение второй кнопки
+                sprintf(str,"<SW3> %s </SW3>",HAL_GPIO_ReadPin(SW3_GPIO_Port, SW3_Pin)?"On":"Off");
+                netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение третьей кнопки
+                sprintf(str,"<LED2> %s </LED2>",HAL_GPIO_ReadPin(LED2_GPIO_Port, LED2_Pin)?"On":"Off");
+                netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение третьей кнопки
+                sprintf(str,"<GetTick> %d </GetTick>",HAL_GetTick());
+                netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение аналоговой величины
+                netconn_write(conn, "</inputs>", strlen("</inputs>"), NETCONN_NOCOPY); // послать заголовок
 			}
 			else if (strcmp(name,"")==0) http_file(conn, "index.html"); // Если пустая строка то запрос индекса
 			else http_file(conn, name);
@@ -98,7 +102,7 @@ static void blink_thread(void *arg)
 	  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
 	  osDelay(50);
 	  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-	  osDelay(1000-50);
+	  osDelay(700-50);
 
 	  }
 }

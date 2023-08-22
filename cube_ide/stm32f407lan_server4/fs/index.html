@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html>
+    <head>
+        <title>Web server stm32f407 using Ajax + XML</title>
+        <script>
+        function getInfo() {
+            nocache = "&nocache=" + Math.random() * 1000000;
+            var request = new XMLHttpRequest();
+            request.onreadystatechange = function() {
+                if (this.readyState == 4) {
+                    if (this.status == 200) {
+                        if (this.responseXML != null) {
+                            // extract XML data from XML file (containing switch states and analog value)
+                            document.getElementById("input1").innerHTML =
+                                this.responseXML.getElementsByTagName('SW1')[0].childNodes[0].nodeValue;
+                            document.getElementById("input2").innerHTML =
+                                this.responseXML.getElementsByTagName('SW2')[0].childNodes[0].nodeValue;
+                            document.getElementById("input3").innerHTML =
+                                this.responseXML.getElementsByTagName('SW3')[0].childNodes[0].nodeValue;
+                            document.getElementById("input4").innerHTML =
+                                this.responseXML.getElementsByTagName('LED2')[0].childNodes[0].nodeValue;
+                            document.getElementById("input5").innerHTML =
+                                this.responseXML.getElementsByTagName('GetTick')[0].childNodes[0].nodeValue;
+                        }
+                    }
+                }
+            }
+            request.open("GET", "ajaxInfo" + nocache, true);
+            request.send(null);
+            setTimeout('getInfo()', 1000);
+        }
+    </script>
+    </head>
+    <body onload="getInfo()">
+        <h1>Web server stm32f407 using Ajax + XML</h1>
+        <p>Button 1 (PE10): <span id="input1">...</span></p>
+        <p>Button 2 (PE11): <span id="input2">...</span></p>
+        <p>Button 3 (PE12): <span id="input3">...</span></p>
+        <p>Led 2 (PE14):    <span id="input4">...</span></p>
+        <p>HAL GetTick:     <span id="input5">...</span></p>
+    </body>
+</html>
