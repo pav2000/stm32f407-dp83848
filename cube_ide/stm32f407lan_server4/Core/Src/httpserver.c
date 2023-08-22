@@ -44,7 +44,7 @@ static void http_server(struct netconn *conn)
                 netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение третьей кнопки
                 sprintf(str,"<LED2> %s </LED2>",HAL_GPIO_ReadPin(LED2_GPIO_Port, LED2_Pin)?"On":"Off");
                 netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение третьей кнопки
-                sprintf(str,"<GetTick> %d </GetTick>",HAL_GetTick());
+                sprintf(str,"<GetTick> %u </GetTick>",HAL_GetTick());
                 netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение аналоговой величины
                 netconn_write(conn, "</inputs>", strlen("</inputs>"), NETCONN_NOCOPY); // послать заголовок
 			}
