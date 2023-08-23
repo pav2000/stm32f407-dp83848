@@ -29,14 +29,34 @@
             request.send(null);
             setTimeout('getInfo()', 1000);
         }
+        function getStat() {
+         nocache = "&nocache=" + Math.random() * 1000000;
+         var request = new XMLHttpRequest();
+         request.onreadystatechange = function() {
+         if (this.readyState == 4) {
+         if (this.status == 200) {
+         if (this.responseText != null) {
+         document.getElementById("stat_txt").innerHTML = this.responseText;
+         }}}}
+         request.open("GET", "stat" + nocache, true);
+         request.send(null);
+         setTimeout('getStat()', 2000);
+}
+        function onload() {
+        getInfo()
+        getStat()
+        }
     </script>
     </head>
-    <body onload="getInfo()">
+    <body onload="onload()">
         <h1>Web server stm32f407 using Ajax + XML</h1>
         <p>Button 1 (PE10): <span id="input1">...</span></p>
         <p>Button 2 (PE11): <span id="input2">...</span></p>
         <p>Button 3 (PE12): <span id="input3">...</span></p>
         <p>Led 2 (PE14):    <span id="input4">...</span></p>
         <p>HAL GetTick:     <span id="input5">...</span></p>
+        <h3>Stat free RTOS (uxTaskGetSystemState)</h3>
+        <p id="stat_txt">stat info: . . .</p>
     </body>
+
 </html>

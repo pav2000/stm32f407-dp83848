@@ -15,17 +15,24 @@
 #include <stdio.h>
 #include "httpserver.h"
 #include "cmsis_os.h"
+
+// Для статистики
+//TaskStatus_t *pxTaskStatusArray;// фиксированный массив
+volatile UBaseType_t uxArraySize, x;
+unsigned long ulTotalRunTime;
+float runtime_percent;
+char str[200];
+
 static void http_server(struct netconn *conn)
 {
 	struct netbuf *inbuf;
 	err_t recv_err;
-	char* buf,*name, str[100];
+	char *buf,*name;
 	u16_t buflen;
 	HAL_GPIO_WritePin(LED3_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); // Соединение установлено
 
 	recv_err = netconn_recv(conn, &inbuf); // Чтение данных из порта, блокировка, если еще ничего нет
 
-//	printf("new connection \n");
 	HAL_GPIO_WritePin(LED3_GPIO_Port, LED1_Pin, GPIO_PIN_RESET); // Начало соединения
 	if (recv_err == ERR_OK)
 	{
@@ -46,8 +53,36 @@ static void http_server(struct netconn *conn)
                 netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение третьей кнопки
                 sprintf(str,"<GetTick> %u </GetTick>",HAL_GetTick());
                 netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение аналоговой величины
-                netconn_write(conn, "</inputs>", strlen("</inputs>"), NETCONN_NOCOPY); // послать заголовок
+                netconn_write(conn, "</inputs>", strlen("</inputs>"), NETCONN_NOCOPY); // закрыть посылку
 			}
+			else if (strstr(name,"stat")){ // Найден запрос статистики
+
+				                // передача статистики по ОС https://stm32world.com/wiki/STM32_FreeRTOS_Statistics
+				                uxArraySize = uxTaskGetNumberOfTasks();
+				            		TaskStatus_t *pxTaskStatusArray = (TaskStatus_t *)pvPortMalloc( uxArraySize * sizeof( TaskStatus_t ) );
+				               		if (pxTaskStatusArray != NULL) {
+				                			uxArraySize = uxTaskGetSystemState(pxTaskStatusArray, uxArraySize,&ulTotalRunTime);
+
+				                			sprintf(str,"<pre>Version software %s\nTask count = %lu\nNo Name          S  Usage    HW\n",VERSION,uxArraySize); //&lt;br/&gt; ->> в ХML это <br/> перенос строки
+				                            netconn_write(conn, str, strlen(str), NETCONN_COPY);
+
+				                			for (x = 0; x < uxArraySize; x++) {
+				                				runtime_percent = (float) (100 * (float) pxTaskStatusArray[x].ulRunTimeCounter	/ (float) ulTotalRunTime);
+				                				sprintf(str,"%lu: %-12s %2d %7.4f %4i\n", x, // https://community.st.com/t5/mems-sensors/how-to-display-the-float-value-in-cube-ide/td-p/155840
+				                						     pxTaskStatusArray[x].pcTaskName,
+				                						     pxTaskStatusArray[x].eCurrentState, runtime_percent,
+				                						     pxTaskStatusArray[x].usStackHighWaterMark);
+				               				 netconn_write(conn, str, strlen(str), NETCONN_COPY);
+				                			}
+
+				                			vPortFree(pxTaskStatusArray);
+				                		}
+				                		else {
+				                		sprintf(str,"nUnable to allocate stack space\n");
+				                  		netconn_write(conn, str, strlen(str), NETCONN_COPY);
+				                		}
+							netconn_write(conn, "</pre>", strlen("/<pre>"), NETCONN_COPY); // закрыть форматирование
+						}
 			else if (strcmp(name,"")==0) http_file(conn, "index.html"); // Если пустая строка то запрос индекса
 			else http_file(conn, name);
 		}
@@ -102,7 +137,7 @@ static void blink_thread(void *arg)
 	  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_RESET);
 	  osDelay(50);
 	  HAL_GPIO_WritePin(LED2_GPIO_Port, LED2_Pin, GPIO_PIN_SET);
-	  osDelay(700-50);
+	  osDelay(800);
 
 	  }
 }
@@ -114,6 +149,7 @@ void http_server_init()
 {
   sys_thread_new("http_thread", http_thread, NULL,2*DEFAULT_THREAD_STACKSIZE, osPriorityNormal);
   sys_thread_new("blink", blink_thread, NULL, 128, osPriorityBelowNormal);
+
 }
 
 
