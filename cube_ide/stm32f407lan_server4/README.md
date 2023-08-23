@@ -18,7 +18,6 @@ JavaScript код, содержащийся на веб-странице, ини
 http://ipasoft.info/index.php/9-blog/13-stm32f4-rabota-s-flash-sdio-microsd-pod-freertos <br>
 https://blog.csdn.net/dxc8865de2/article/details/107914150 <br>
 https://blog.csdn.net/xuan530482366/article/details/123713602 <br>
-
+<img src="https://github.com/pav2000/stm32f407-dp83848/blob/master/board/web04.jpg" width="500" /> <br>  
 <br>
-
 
