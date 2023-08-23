@@ -43,13 +43,13 @@ static void http_server(struct netconn *conn)
 			if (strstr(name,"ajaxInfo")){ // Найден AJAX запрос
 				// Формируем xml ответ на запрос с данными
 				netconn_write(conn, "<?xml version = \"1.0\" ?> \n <inputs>", strlen("<?xml version = \"1.0\" ?> \n <inputs>"), NETCONN_NOCOPY); // послать заголовок
-                sprintf(str,"<SW1> %s </SW1>",HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin)?"On":"Off");
+                sprintf(str,"<SW1> %s </SW1>",HAL_GPIO_ReadPin(SW1_GPIO_Port, SW1_Pin)?"Off":"On");
                 netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение первой кнопки
-                sprintf(str,"<SW2> %s </SW2>",HAL_GPIO_ReadPin(SW2_GPIO_Port, SW2_Pin)?"On":"Off");
+                sprintf(str,"<SW2> %s </SW2>",HAL_GPIO_ReadPin(SW2_GPIO_Port, SW2_Pin)?"Off":"On");
                 netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение второй кнопки
-                sprintf(str,"<SW3> %s </SW3>",HAL_GPIO_ReadPin(SW3_GPIO_Port, SW3_Pin)?"On":"Off");
+                sprintf(str,"<SW3> %s </SW3>",HAL_GPIO_ReadPin(SW3_GPIO_Port, SW3_Pin)?"Off":"On");
                 netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение третьей кнопки
-                sprintf(str,"<LED2> %s </LED2>",HAL_GPIO_ReadPin(LED2_GPIO_Port, LED2_Pin)?"On":"Off");
+                sprintf(str,"<LED2> %s </LED2>",HAL_GPIO_ReadPin(LED2_GPIO_Port, LED2_Pin)?"Off":"On");
                 netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение третьей кнопки
                 sprintf(str,"<GetTick> %u </GetTick>",HAL_GetTick());
                 netconn_write(conn, str, strlen(str), NETCONN_COPY); // послать значение аналоговой величины
