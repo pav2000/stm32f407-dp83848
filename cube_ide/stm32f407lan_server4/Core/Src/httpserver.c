@@ -63,7 +63,9 @@ static void http_server(struct netconn *conn)
 				               		if (pxTaskStatusArray != NULL) {
 				                			uxArraySize = uxTaskGetSystemState(pxTaskStatusArray, uxArraySize,&ulTotalRunTime);
 
-				                			sprintf(str,"<pre>Version software %s\nTask count = %lu\nNo Name          S  Usage    HW\n",VERSION,uxArraySize); //&lt;br/&gt; ->> в ХML это <br/> перенос строки
+				                			uint free_heap=xPortGetFreeHeapSize(); // получить свободное место в куче
+
+				                			sprintf(str,"<pre>Version software %s\nxPortGetFreeHeapSize = %d\nTask count = %lu\nNo Name          S  Usage    HW\n",VERSION,free_heap,uxArraySize); //&lt;br/&gt; ->> в ХML это <br/> перенос строки
 				                            netconn_write(conn, str, strlen(str), NETCONN_COPY);
 
 				                			for (x = 0; x < uxArraySize; x++) {
@@ -147,14 +149,13 @@ static void blink_thread(void *arg)
 // 1024 не хватает для стека
 void http_server_init()
 {
-  sys_thread_new("http_thread", http_thread, NULL,2*DEFAULT_THREAD_STACKSIZE, osPriorityNormal);
-  sys_thread_new("blink", blink_thread, NULL, 128, osPriorityBelowNormal);
+  sys_thread_new("http_thread", http_thread, NULL,1200, osPriorityNormal);
+  sys_thread_new("blink", blink_thread, NULL, 200, osPriorityBelowNormal);
 
 }
 
 
 // Кинуть файл в сокет (файловая система уже смотнтирована)
-
 FATFS Fs1;   /* Work area (filesystem object) for logical drive */
 FIL _fil;        /* File object */
 uint8_t line[1024]; /* Line buffer */

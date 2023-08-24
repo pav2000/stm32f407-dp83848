@@ -37,7 +37,7 @@ extern "C" {
 
 /* Exported types ------------------------------------------------------------*/
 /* USER CODE BEGIN ET */
-#define VERSION "0.50"
+#define VERSION "0.52"
 /* USER CODE END ET */
 
 /* Exported constants --------------------------------------------------------*/
